@@ -61,7 +61,7 @@ def configure():
 @pass_config
 @require_cli_config
 def get_conf(config):
-    """prints current configuration"""
+    """Prints current configuration"""
     click.secho(json.dumps(get_configuration(), indent=3), fg="cyan")
 
 
@@ -71,8 +71,9 @@ def get_conf(config):
 def list_accounts(config):
     """List AWS accounts designated for hackathons"""
     account_list = list_aws_accounts(config)
-    click.secho(f"There are {len(account_list)} AWS accounts in the OU")
-    click.secho(account_list)
+    click.secho(f"There are {len(account_list)} AWS accounts in the OU:")
+    for account in account_list:
+        click.secho(account)
 
 
 @cli.command()
@@ -80,8 +81,9 @@ def list_accounts(config):
 @require_cli_config
 def sync(config):
     """Syncs Identity Center (IC) groups and AWS Accounts.
-    Ensure one IC Group is created for each AWS account, and is assigned
-    the Administrator permission set for that AWS account"""
+    Ensures one IC Group is created for each AWS account, and that that
+    group is granted access to the Administrator permission set for the corresponding AWS account.
+    """
 
     # Each group is granted access to this permission set in the corresponding accounts.
     PERMISSION_SET_NAME = "AWSAdministratorAccess"
@@ -113,3 +115,15 @@ def sync(config):
     associate_group_permissions_with_aws_accounts(
         config, account_id_to_group_id, permission_set_arn, sso_instance_arn
     )
+
+
+@cli.command()
+@pass_config
+@require_cli_config
+@click.argument("path", type=click.Path(exists=True))
+def create_users(config, path):
+    """Creates IC users and adds them to groups"""
+
+    users = get_users(config, path)
+
+    group_ids = get_group_ids(config)

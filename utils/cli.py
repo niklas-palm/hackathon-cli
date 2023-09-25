@@ -1,6 +1,7 @@
 import os
 import click
 import json
+import csv
 from functools import wraps
 
 HACK_CONFIG_PATH = "~/.hack/config"
@@ -55,3 +56,23 @@ def require_cli_config(func):
             )
 
     return wrapper
+
+
+def get_users(config, path):
+    users = {}
+
+    with open(path, "r", newline="") as csvfile:
+        csvreader = csv.reader(csvfile)
+        for row in csvreader:
+            # Check if each row has exactly two columns and the second column is a string
+            if not len(row) == 2:
+                click.secho("That's more columns then I was expeting", fg="red")
+                raise Exception("Validation error")
+            email = row[0]
+            team = row[1]
+            users[email] = team
+
+    if config.verbose:
+        click.echo("Users:")
+        click.echo(json.dumps(users, indent=2))
+    return users
