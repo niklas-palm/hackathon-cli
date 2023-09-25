@@ -91,22 +91,25 @@ def sync(config):
     account_list = list_aws_accounts(config)
 
     click.echo(
-        "Ensuring there's an IC group for each AWS Account. Creating if it's missing"
+        "Ensuring there's an IC group for each AWS Account. Creating if it's missing..."
     )
     # For each AWS account, ensures there's an IC group with the same name (Account ID)
     account_id_to_group_id = sync_ic_groups(config, account_list)
-    click.secho(json.dumps(account_id_to_group_id, indent=2), fg="cyan")
 
     # This is what the SSO Admin client needs to perform administrative tasks...
     sso_instance_arn = get_sso_instance_arn(config)
 
+    click.echo("Getting Permission set ARN...")
     # Get the ARN of the desired permission set.
     permission_set_arn = get_permission_set_arn(
         config, PERMISSION_SET_NAME, sso_instance_arn
     )
 
+    click.echo(
+        f"Granting the IC groups permission to assume the {PERMISSION_SET_NAME} permission set in the corresponding accounts..."
+    )
     # Ensures that every group has an assosciation to the admin permission set in the corresponding AWS account.
     # That mean that adding a user to an IC group, automatically grants that user admin permission to that AWS account.
     associate_group_permissions_with_aws_accounts(
-        account_id_to_group_id, permission_set_arn, sso_instance_arn
+        config, account_id_to_group_id, permission_set_arn, sso_instance_arn
     )

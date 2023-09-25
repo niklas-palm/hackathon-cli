@@ -10,14 +10,14 @@ def store_configuration(config):
     """Stores hack cli configuration"""
 
     os.makedirs(os.path.dirname(HACK_CONFIG_PATH), exist_ok=True)
-
-    with open(HACK_CONFIG_PATH, "w") as file:
+    os.makedirs(os.path.dirname(os.path.expanduser(HACK_CONFIG_PATH)), exist_ok=True)
+    with open(os.path.expanduser(HACK_CONFIG_PATH), "w") as file:
         json.dump(config, file, indent=2)
 
 
 def get_configuration():
     try:
-        with open(HACK_CONFIG_PATH, "r") as file:
+        with open(os.path.expanduser(HACK_CONFIG_PATH), "r") as file:
             data = json.load(file)
             return data
     except FileNotFoundError:
