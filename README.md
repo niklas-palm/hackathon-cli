@@ -2,7 +2,7 @@
 
 A small light-weight cli to manage users and account access for hackathons in AWS.
 
-## Prerequisites.
+## Prerequisites
 
 - AWS Control Tower enabled.
 - An Organizational Unit dedicated for hackathons.
@@ -11,6 +11,17 @@ A small light-weight cli to manage users and account access for hackathons in AW
 - Active AWS credentials in the current environment
 
 The following commands can be executed in the Control Tower Management account. It's a best practice to create a delegated administraror for Identity Center related operations, in which case you'll credentials for that account instead.
+
+## Docker
+
+For convenience, and to avoid installing the CLI/Python dependencies on your machine you can use Docker to run the CLI.
+
+```bash
+docker build . -t hackathon-cli # Build the Docker image and tag it as "hackathon-cli"
+docker run -it --rm hackathon-cli # Run the CLI in a container (and remove the container when exiting)
+```
+
+This will launch an interactive shell inside the Docker container with the CLI pre-installed. From there you can run any of the CLI commands as documented below.
 
 ## Example usage
 
