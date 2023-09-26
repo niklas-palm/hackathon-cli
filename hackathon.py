@@ -19,7 +19,7 @@ class Config(object):
         self.verbose = False
         self.update_from_conf_file()
 
-    ALLOWED_KEYS = ['verbose', 'region', 'ou', 'identity_store_id']
+    ALLOWED_KEYS = ["verbose", "region", "ou", "identity_store_id"]
 
     # Merge existing conf with Config object
     def update_from_conf_file(self):
@@ -79,7 +79,7 @@ def configure():
 @cli.command()
 @pass_config
 @require_cli_config
-def get_conf():
+def get_conf(_):
     """Prints current configuration"""
     click.secho(json.dumps(get_configuration(), indent=3), fg="cyan")
 
