@@ -1,4 +1,5 @@
 import click
+import sys
 from utils.cli import *
 from utils.aws import *
 import json
@@ -9,12 +10,15 @@ class Config(object):
         self.verbose = False
         self.update_from_conf_file()
 
+    ALLOWED_KEYS = ['verbose', 'region', 'ou', 'identity_store_id']
+
     # Merge existing conf with Config object
     def update_from_conf_file(self):
         conf = get_configuration()
         if conf:
             for key, value in conf.items():
-                setattr(self, key, value)
+                if key in self.ALLOWED_KEYS:
+                    setattr(self, key, value)
 
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
