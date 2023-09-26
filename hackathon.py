@@ -62,9 +62,9 @@ def configure():
         {"region": region, "ou": ou, "identity_store_id": identity_store_id}
     )
 
-    click.secho(f"\n\U0001F973 hack cli is now ready to be used", fg="cyan")
+    click.secho("\n\U0001F973 hack cli is now ready to be used", fg="cyan")
     click.secho(
-        f'\nIf you ever need to reconfigure the cli, just run "hack configure"',
+        '\nIf you ever need to reconfigure the cli, just run "hack configure"',
         fg="white",
     )
 
