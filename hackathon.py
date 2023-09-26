@@ -72,7 +72,7 @@ def configure():
 @cli.command()
 @pass_config
 @require_cli_config
-def get_conf(config):
+def get_conf():
     """Prints current configuration"""
     click.secho(json.dumps(get_configuration(), indent=3), fg="cyan")
 
@@ -181,6 +181,6 @@ def setup_users(config, path, type):
     add_users_to_groups(config, users, group_ids)
 
     click.secho(
-        f"\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
+        "\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
         fg="cyan",
     )
