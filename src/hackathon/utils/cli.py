@@ -39,7 +39,7 @@ def get_configuration() -> object:
         return None
     except json.JSONDecodeError as e:
         click.secho(
-            f"Something went wrong when trying to read the configuration file...",
+            "Something went wrong when trying to read the configuration file...",
             fg="red",
         )
 

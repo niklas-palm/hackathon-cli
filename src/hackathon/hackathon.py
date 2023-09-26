@@ -9,12 +9,15 @@ class Config(object):
         self.verbose = False
         self.update_from_conf_file()
 
+    ALLOWED_KEYS = ["verbose", "region", "ou", "identity_store_id"]
+
     # Merge existing conf with Config object
     def update_from_conf_file(self):
         conf = get_configuration()
         if conf:
             for key, value in conf.items():
-                setattr(self, key, value)
+                if key in self.ALLOWED_KEYS:
+                    setattr(self, key, value)
 
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
@@ -50,7 +53,7 @@ def configure():
         {"region": region, "ou": ou, "identity_store_id": identity_store_id}
     )
 
-    click.secho(f"\n\U0001F973 hack cli is now ready to be used", fg="cyan")
+    click.secho("\n\U0001F973 hack cli is now ready to be used", fg="cyan")
     click.secho(
         f'\nIf you ever need to reconfigure the cli, just run "hack configure"',
         fg="white",
@@ -135,7 +138,7 @@ def delete_groups(config):
     delete_ic_groups(config, group_ids)
 
     click.secho(
-        f"\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
+        "\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
         fg="cyan",
     )
 
@@ -169,6 +172,6 @@ def setup_users(config, path, type):
     add_users_to_groups(config, users, group_ids)
 
     click.secho(
-        f"\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
+        "\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
         fg="cyan",
     )
