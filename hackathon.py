@@ -79,36 +79,39 @@ def list_accounts(config):
 @cli.command()
 @pass_config
 @require_cli_config
-def sync(config):
+@click.option(
+    "-p",
+    "--permission-set-name",
+    type=str,
+    default="AWSAdministratorAccess",
+    show_default=True,
+    help="Name of permission set to grant groups access to",
+)
+def sync_groups(config, permission_set_name):
     """Syncs Identity Center (IC) groups and AWS Accounts.
     Ensures one IC Group is created for each AWS account, and that that
     group is granted access to the Administrator permission set for the corresponding AWS account.
     """
 
     # Each group is granted access to this permission set in the corresponding accounts.
-    PERMISSION_SET_NAME = "AWSAdministratorAccess"
+    permission_set_name = "AWSAdministratorAccess"
 
-    click.echo("Getting AWS account IDs from Hackathon OU...")
     # Get all AWS accounts in hackathon OU
     account_list = list_aws_accounts(config)
 
-    click.echo(
-        "Ensuring there's an IC group for each AWS Account. Creating if it's missing..."
-    )
     # For each AWS account, ensures there's an IC group with the same name (Account ID)
     account_id_to_group_id = sync_ic_groups(config, account_list)
 
     # This is what the SSO Admin client needs to perform administrative tasks...
     sso_instance_arn = get_sso_instance_arn(config)
 
-    click.echo("Getting Permission set ARN...")
     # Get the ARN of the desired permission set.
     permission_set_arn = get_permission_set_arn(
-        config, PERMISSION_SET_NAME, sso_instance_arn
+        config, permission_set_name, sso_instance_arn
     )
 
     click.echo(
-        f"Granting the IC groups permission to assume the {PERMISSION_SET_NAME} permission set in the corresponding accounts..."
+        f"Granting the IC groups permission to assume the {permission_set_name} permission set in the corresponding accounts..."
     )
     # Ensures that every group has an assosciation to the admin permission set in the corresponding AWS account.
     # That mean that adding a user to an IC group, automatically grants that user admin permission to that AWS account.
@@ -120,10 +123,52 @@ def sync(config):
 @cli.command()
 @pass_config
 @require_cli_config
+def delete_groups(config):
+    """Deletes all IC groups, to reset all permission sets."""
+
+    # Get all AWS accounts in hackathon OU
+    account_list = list_aws_accounts(config)
+
+    # Gets the group IDs associated with the AWS accounts
+    group_ids = get_group_ids(config, account_list)
+
+    delete_ic_groups(config, group_ids)
+
+    click.secho(
+        f"\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
+        fg="cyan",
+    )
+
+
+@cli.command()
+@pass_config
+@require_cli_config
 @click.argument("path", type=click.Path(exists=True))
-def create_users(config, path):
-    """Creates IC users and adds them to groups"""
+@click.option(
+    "-t",
+    "--type",
+    type=str,
+    default="hackathon",
+    show_default=True,
+    help="Specify user type. Helpfull for batch-operations down the line.",
+)
+def setup_users(config, path, type):
+    """Creates and syncs IC users with their respective team groups"""
 
     users = get_users(config, path)
+    click.echo(json.dumps(users, indent=2))
 
-    group_ids = get_group_ids(config)
+    # Get all AWS accounts in hackathon OU
+    account_list = list_aws_accounts(config)
+
+    group_ids = get_group_ids(config, account_list)
+
+    users = create_sso_users(config, users, type)
+    click.echo(json.dumps(users, indent=2))
+
+    add_users_to_groups(config, users, group_ids)
+
+    click.secho(
+        f"\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
+        fg="cyan",
+    )

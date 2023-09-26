@@ -1,25 +1,31 @@
 import boto3
 import click
 
-client = boto3.client("organizations")
+org_client = boto3.client("organizations")
 identity_store_client = boto3.client("identitystore")
 sso_admin_client = boto3.client("sso-admin")
 
 
-def list_aws_accounts(config) -> list:
+def list_aws_accounts(config: object) -> list:
     """Lists all AWS accounts in the configured OU
+
+    Parameters:
+        config (object): CLI configuration object.
 
     Returns:
         list: List of AWS accounts
     """
-    response = client.list_children(
+
+    click.echo("Getting AWS account IDs from Hackathon OU...")
+
+    response = org_client.list_children(
         ParentId=config.ou,
         ChildType="ACCOUNT",
     )
 
     account_list = [x["Id"] for x in response["Children"]]
     while "NextToken" in response:
-        response = client.list_children(
+        response = org_client.list_children(
             ParentId=config.ou,
             ChildType="ACCOUNT",
             MaxResults=1,
@@ -33,13 +39,22 @@ def list_aws_accounts(config) -> list:
     return account_list
 
 
-def sync_ic_groups(config, account_list) -> object:
+def sync_ic_groups(config: object, account_list: list) -> object:
     """Creates IC groups for every AWS account ID in the provided list.
     Retreives and return all group IDs, newly and previously created.
+
+    Parameters:
+        config (object): CLI configuration object.
+        account_list (list): list of AWS accounts.
 
     Returns:
         object: mapping between each account ID, and corresponding IC group ID.
     """
+
+    click.echo(
+        "Ensuring there's an IC group for each AWS Account. Creating if it's missing..."
+    )
+
     account_id_to_group_id = {}
 
     with click.progressbar(account_list, label="Syncing") as accounts:
@@ -88,11 +103,39 @@ def sync_ic_groups(config, account_list) -> object:
     return account_id_to_group_id
 
 
+def delete_ic_groups(conf: object, group_ids: list) -> None:
+    """Deletes the Identity Center groups
+
+    Parameters:
+        config (object): CLI configuration object.
+        group_ids (list): list of IC group IDs to delete
+
+    Returns:
+        None
+    """
+
+    with click.progressbar(group_ids, label="Deleting IC Groups") as groups:
+        for group_id in groups:
+            try:
+                identity_store_client.delete_group(
+                    IdentityStoreId=conf.identity_store_id, GroupId=group_id
+                )
+            except Exception as e:
+                click.secho("There was some issue deleteing the IC group", fg="red")
+                raise e
+
+
 def get_sso_instance_arn(config) -> str:
     """Gets the SSO instance ARN associated to the Identity Store
 
+    Parameters:
+        config (object): CLI configuration object.
+        account_id_to_group_id (object): AWS Account ID to IC group ID mapping.
+        permission_set_arn (str): ARN of permission set to grant group acccess to.
+        sso_instance_arn (str): ARN of SSO instance.
+
     Returns:
-        str: The SSO instance ARN
+        str: the ARN of the SSO instance
     """
     response = sso_admin_client.list_instances()
     for entry in response["Instances"]:
@@ -100,9 +143,15 @@ def get_sso_instance_arn(config) -> str:
             return entry["InstanceArn"]
 
 
-def get_permission_set_arn(config, permission_set_name, sso_instance_arn) -> str:
+def get_permission_set_arn(
+    config: object, permission_set_name: str, sso_instance_arn: str
+) -> str:
     """Returns the permission set ARN given a permission set name"""
     # List the permission sets to find the ARN of the AWSAdministratorAccess permission set
+
+    if config.verbose:
+        click.echo("Getting Permission set ARN...")
+
     response = sso_admin_client.list_permission_sets(InstanceArn=sso_instance_arn)
 
     # Iterate through the permission sets to find the ARN of the desired permission set
@@ -120,13 +169,23 @@ def get_permission_set_arn(config, permission_set_name, sso_instance_arn) -> str
 
 
 def associate_group_permissions_with_aws_accounts(
-    config, account_id_to_group_id, permission_set_arn, sso_instance_arn
+    config: object,
+    account_id_to_group_id: object,
+    permission_set_arn: str,
+    sso_instance_arn: str,
 ) -> None:
     """Grant the IC group permission to assume the provided permission set in th corresponding AWS account
 
+    Parameters:
+        config (object): CLI configuration object.
+        account_id_to_group_id (object): AWS Account ID to IC group ID mapping.
+        permission_set_arn (str): ARN of permission set to grant group acccess to.
+        sso_instance_arn (str): ARN of SSO instance.
+
     Returns:
-        None: The SSO instance ARN
+        None:
     """
+
     with click.progressbar(
         account_id_to_group_id.items(), label="Granting group permission"
     ) as mappings:
@@ -149,13 +208,16 @@ def associate_group_permissions_with_aws_accounts(
     return
 
 
-def get_group_ids(config) -> list:
+def get_group_ids(config: object, account_list: list) -> list:
     """Gets the group IDs of the IC groups assosciated with the AWS accounts in the OU
+
+    Parameters:
+        config (object): CLI configuration object
+        account_list (list): list with AWS account IDs to find corresponding IC groups for
 
     Returns:
         list: List with the IC group IDs
     """
-    account_list = list_aws_accounts(config)
 
     group_ids = []
     # The IC groups are named using the AWS account ID
@@ -188,11 +250,103 @@ def get_group_ids(config) -> list:
     return group_ids
 
 
-def create_sso_users(users):
-    """Creates SSO users"""
-    pass
+def create_sso_users(config: object, users: object, user_type: str) -> object:
+    """Creates IC users
+
+    Parameters:
+        config (object): CLI configuration object
+        users (object): Dictionary on shape {email: {team: '1'}}
+        path (str): path to user csv file
+
+    Returns:
+        object: a user object on shape {user_email: {team: '1', user_id: '34543sdf'}}
+    """
+
+    click.echo("Creating/Fetching IC users")
+
+    with click.progressbar(users.keys(), label="Getting group IDs") as user_emails:
+        for user_email in user_emails:
+            try:
+                response = identity_store_client.get_user_id(
+                    IdentityStoreId=config.identity_store_id,
+                    AlternateIdentifier={
+                        "UniqueAttribute": {
+                            "AttributePath": "userName",
+                            "AttributeValue": user_email,
+                        }
+                    },
+                )
+                if config.verbose:
+                    click.echo(f"\nUser with email {user_email} already exists.")
+
+                users[user_email]["user_id"] = response["UserId"]
+            except identity_store_client.exceptions.ResourceNotFoundException:
+                # User not found, creating user
+                try:
+                    response = identity_store_client.create_user(
+                        IdentityStoreId=config.identity_store_id,
+                        UserName=user_email,
+                        DisplayName=user_email,
+                        Name={"GivenName": "John", "FamilyName": "Doe"},
+                        Emails=[
+                            {
+                                "Value": user_email,
+                                "Type": "Work",
+                                "Primary": True,
+                            },
+                        ],
+                        UserType=user_type,
+                    )
+                    if config.verbose:
+                        click.echo(f"\nNew user with email {user_email} created")
+
+                    users[user_email]["user_id"] = response["UserId"]
+                except Exception as e:
+                    click.echo(
+                        f"\nSomething went wrong when trying to add user {user_email}",
+                        fg="red",
+                    )
+                    raise e
+    return users
 
 
-def add_users_to_groups():
-    """Adds users to IC groups"""
-    pass
+def add_users_to_groups(config: object, users: object, group_ids: list) -> None:
+    """Adds users to IC groups
+
+    Parameters:
+        config (object): CLI configuration object
+        users (object): Dictionary on shape {user_email: {team: '1', user_id: '34543sdf'}}
+        path (str): path to user csv file
+
+    Returns:
+        None
+    """
+
+    click.echo("Adding users to respective team IC groups.")
+
+    # Create team number to group mapping.
+    teams = [x["team"] for x in users.values()]
+    unique_teams = list(set(teams))
+    team_to_group_mapping = dict(zip(unique_teams, group_ids))
+
+    with click.progressbar(users.items(), label="Adding users to groups") as user_items:
+        for email, user_info in user_items:
+            team = user_info["team"]
+            user_id = user_info["user_id"]
+
+            try:
+                identity_store_client.create_group_membership(
+                    IdentityStoreId=config.identity_store_id,
+                    GroupId=team_to_group_mapping[team],
+                    MemberId={"UserId": user_id},
+                )
+
+            except identity_store_client.exceptions.ConflictException:
+                # User already in group
+                pass
+            except Exception as e:
+                click.echo(
+                    f"\nSomething went wrong when trying to add user {email} to IC group {team_to_group_mapping[team]}",
+                    fg="red",
+                )
+                raise e
