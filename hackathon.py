@@ -1,8 +1,9 @@
-import click
-import sys
-from utils.cli import *
-from utils.aws import *
 import json
+
+import click
+
+from utils.aws import *
+from utils.cli import *
 
 
 class Config(object):
