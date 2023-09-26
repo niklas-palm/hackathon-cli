@@ -23,6 +23,9 @@ class Config(object):
 
     # Merge existing conf with Config object
     def update_from_conf_file(self):
+        """
+        Updates the configuration from the configuration file.
+        """
         conf = get_configuration()
         if conf:
             for key, value in conf.items():
@@ -37,6 +40,9 @@ pass_config = click.make_pass_decorator(Config, ensure=True)
 @click.option("-v", "--verbose", is_flag=True)
 @pass_config
 def cli(config, verbose):
+    """
+    A CLI for the hackathon project.
+    """
     config.verbose = verbose
 
 
@@ -148,7 +154,7 @@ def delete_groups(config):
     delete_ic_groups(config, group_ids)
 
     click.secho(
-        f"\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
+        "\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
         fg="cyan",
     )
 
