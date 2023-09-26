@@ -1,11 +1,11 @@
-import os
-import click
-import json
-import sys
 import csv
+import json
+import os
 import re
-
+import sys
 from functools import wraps
+
+import click
 
 HACK_CONFIG_PATH = "~/.hack/config"
 

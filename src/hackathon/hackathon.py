@@ -1,36 +1,20 @@
-import json
-
 import click
-
-from utils.aws import *
-from utils.cli import *
+from hackathon.utils.cli import *
+from hackathon.utils.aws import *
+import json
 
 
 class Config(object):
-    """
-    A configuration class that holds the verbose mode and updates the configuration
-    from the configuration file.
-    """
-
     def __init__(self) -> None:
-        """
-        Initialize the configuration object and update it from the configuration file.
-        """
         self.verbose = False
         self.update_from_conf_file()
 
-    ALLOWED_KEYS = ['verbose', 'region', 'ou', 'identity_store_id']
-
     # Merge existing conf with Config object
     def update_from_conf_file(self):
-        """
-        Updates the configuration from the configuration file.
-        """
         conf = get_configuration()
         if conf:
             for key, value in conf.items():
-                if key in self.ALLOWED_KEYS:
-                    setattr(self, key, value)
+                setattr(self, key, value)
 
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
@@ -40,9 +24,6 @@ pass_config = click.make_pass_decorator(Config, ensure=True)
 @click.option("-v", "--verbose", is_flag=True)
 @pass_config
 def cli(config, verbose):
-    """
-    A CLI for the hackathon project.
-    """
     config.verbose = verbose
 
 
@@ -69,9 +50,9 @@ def configure():
         {"region": region, "ou": ou, "identity_store_id": identity_store_id}
     )
 
-    click.secho("\n\U0001F973 hack cli is now ready to be used", fg="cyan")
+    click.secho(f"\n\U0001F973 hack cli is now ready to be used", fg="cyan")
     click.secho(
-        '\nIf you ever need to reconfigure the cli, just run "hack configure"',
+        f'\nIf you ever need to reconfigure the cli, just run "hack configure"',
         fg="white",
     )
 
@@ -79,7 +60,7 @@ def configure():
 @cli.command()
 @pass_config
 @require_cli_config
-def get_conf():
+def get_conf(config):
     """Prints current configuration"""
     click.secho(json.dumps(get_configuration(), indent=3), fg="cyan")
 
@@ -154,7 +135,7 @@ def delete_groups(config):
     delete_ic_groups(config, group_ids)
 
     click.secho(
-        "\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
+        f"\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
         fg="cyan",
     )
 
@@ -188,6 +169,6 @@ def setup_users(config, path, type):
     add_users_to_groups(config, users, group_ids)
 
     click.secho(
-        "\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
+        f"\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
         fg="cyan",
     )
