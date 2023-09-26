@@ -6,7 +6,15 @@ import json
 
 
 class Config(object):
+    """
+    A configuration class that holds the verbose mode and updates the configuration
+    from the configuration file.
+    """
+
     def __init__(self) -> None:
+        """
+        Initialize the configuration object and update it from the configuration file.
+        """
         self.verbose = False
         self.update_from_conf_file()
 
