@@ -151,7 +151,7 @@ def delete_groups(config):
     "-t",
     "--type",
     type=str,
-    default="hackathon",
+    default="temp-hackathon-user",
     show_default=True,
     help="Specify user type. Helpfull for batch-operations down the line.",
 )
@@ -175,3 +175,46 @@ def setup_users(config, path, type):
         "\nUsers have been addded to the respective groups, and should now have access to their AWS accounts",
         fg="cyan",
     )
+
+
+@cli.command()
+@pass_config
+@require_cli_config
+@click.option(
+    "-t",
+    "--type",
+    type=str,
+    default="temp-hackathon-user",
+    show_default=True,
+    help="Specify user type. Helpfull for batch-operations down the line.",
+)
+def purge(config: object, type: str):
+    """Deletes ALL IC users of the specified type"""
+    click.confirm(
+        f'Are you sure you want to proceed? This will delete all users of type "{type}"',
+        abort=True,
+    )
+
+    users_to_delete = get_users_of_type(config, type)
+    delete_users(config, users_to_delete)
+
+
+@cli.command()
+@pass_config
+@require_cli_config
+@click.option(
+    "-t",
+    "--type",
+    type=str,
+    default="temp-hackathon-user",
+    show_default=True,
+    help="Specify user type. Helpfull for batch-operations down the line.",
+)
+def list_users(config: object, type: str):
+    users = get_users_of_type(config, type)
+
+    if users:
+        for user in users:
+            click.echo(user["DisplayName"])
+    else:
+        click.secho(f"\nNo users of type: {type}\n", fg="red")

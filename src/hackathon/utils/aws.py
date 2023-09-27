@@ -1,5 +1,6 @@
 import boto3
 import click
+import json
 
 org_client = boto3.client("organizations")
 identity_store_client = boto3.client("identitystore")
@@ -350,3 +351,74 @@ def add_users_to_groups(config: object, users: object, group_ids: list) -> None:
                     fg="red",
                 )
                 raise e
+
+
+def list_users(config: object) -> list:
+    """Fetches all users from Identy Center
+
+    Parameters:
+        config (object): CLI configuration object
+
+    Returns:
+        list: list of IC users
+    """
+    user_list = []
+    try:
+        response = identity_store_client.list_users(
+            IdentityStoreId=config.identity_store_id,
+            # NextToken='string',
+            # Filters=[
+            #     {"AttributePath": "UserType", "AttributeValue": "type"},
+            # ],
+        )
+        user_list += response["Users"]
+
+        while "NextToken" in response:
+            response = identity_store_client.list_users(
+                IdentityStoreId=config.identity_store_id,
+                NextToken=response["NextToken"],
+            )
+
+            user_list += response["Users"]
+
+    except Exception as e:
+        click.secho("Something went wrong when fetching users...")
+        click.echo(e)
+
+    return user_list
+
+
+def get_users_of_type(config: object, user_type: str) -> list:
+    """Fetches all users in Identity Center of the provided user type
+
+    Parameters:
+        config (object): CLI configuration object
+        type (str): UserType
+
+    Returns:
+        list: list of IC users of given UserType
+    """
+    users = list_users(config)
+
+    # Extract users that matches the type
+    return [x for x in users if "UserType" in x and x["UserType"] == user_type]
+
+
+def delete_users(config: object, users: list) -> None:
+    if users:
+        for user in users:
+            try:
+                identity_store_client.delete_user(
+                    IdentityStoreId=config.identity_store_id,
+                    UserId=user["UserId"],
+                )
+
+                click.secho(f"{user['DisplayName']} deleted", fg="green")
+            except Exception as e:
+                click.secho(
+                    f"Something went wrong when deleting user: \n{json.dumps(user, indent=2)}",
+                    fg="red",
+                )
+                raise e
+    else:
+        click.secho("\nNo users found that matched the UserType\n", fg="red")
