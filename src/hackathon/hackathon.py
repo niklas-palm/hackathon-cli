@@ -186,7 +186,7 @@ def setup_users(config, path, type):
     type=str,
     default="temp-hackathon-user",
     show_default=True,
-    help="Specify user type. Helpfull for batch-operations down the line.",
+    help="Specify user type. Helpful for batch-operations down the line.",
 )
 def purge(config: object, type: str):
     """Deletes ALL IC users of the specified type"""
@@ -208,7 +208,7 @@ def purge(config: object, type: str):
     type=str,
     default="temp-hackathon-user",
     show_default=True,
-    help="Specify user type. Helpfull for batch-operations down the line.",
+    help="Specify user type. Helpful for batch-operations down the line.",
 )
 def list_users(config: object, type: str):
     users = get_users_of_type(config, type)
