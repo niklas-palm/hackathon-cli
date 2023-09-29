@@ -12,7 +12,19 @@ A small light-weight cli to manage users and account access for hackathons in AW
 
 The following commands can be executed in the Control Tower Management account. It's a best practice to create a delegated administraror for Identity Center related operations, in which case you'll credentials for that account instead.
 
-## Docker
+## Installation
+
+You can install the CLI using pip, or use Docker to use the CLI in a containerized environment
+
+### Using pip
+
+In the root of the directory, run
+
+```bash
+pip install .
+```
+
+### Docker
 
 For convenience, and to avoid installing the CLI/Python dependencies on your machine you can use Docker to run the CLI.
 
