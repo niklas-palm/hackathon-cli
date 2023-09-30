@@ -138,7 +138,7 @@ def delete_groups(config):
     delete_ic_groups(config, group_ids)
 
     click.secho(
-        "\nAll IC groups and associations deleted. To recreate them, run 'hack sync' ",
+        "\nAll IC groups and associations deleted. To recreate them, run 'hack sync-groups' ",
         fg="cyan",
     )
 
