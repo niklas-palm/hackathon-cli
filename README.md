@@ -99,3 +99,15 @@ Run this command when you
 - want to privision Identity Center users for each Hackathon participant,
 - want to add new and existing Identity Center users to the IC groups related to the hackathon,
 - want to grant users access to the SSO portal and assosciated AWS account.
+
+### Delete all hackathon IC users
+
+```bash
+hack purge-users
+```
+
+Deletes all Identity Center users of the specified UserType. By default, users of type `temp-hackathon-user` are deleted.
+
+Run this command when you
+
+- want to remove hackathon users from Identity Center.
