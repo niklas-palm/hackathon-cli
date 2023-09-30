@@ -188,7 +188,7 @@ def setup_users(config, path, type):
     show_default=True,
     help="Specify user type. Helpful for batch-operations down the line.",
 )
-def purge(config: object, type: str):
+def purge_users(config: object, type: str):
     """Deletes ALL IC users of the specified type"""
     click.confirm(
         f'Are you sure you want to proceed? This will delete all users of type "{type}"',
