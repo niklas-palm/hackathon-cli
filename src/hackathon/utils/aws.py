@@ -237,9 +237,13 @@ def get_group_ids(config: object, account_list: list) -> list:
                 group_id = response["GroupId"]
                 group_ids.append(group_id)
 
+            except identity_store_client.exceptions.ResourceNotFoundException:
+                # No IC groupt with this ID
+                continue
+
             except Exception as e:
                 click.secho(
-                    'Something went wrong, fetching the group IDs form the accounts. Perhaps you need to run "hack sync"?',
+                    '\nSomething went wrong, fetching the group IDs form the accounts. Perhaps you need to run "hack sync-groups"?',
                     fg="red",
                 )
                 raise e
@@ -265,7 +269,7 @@ def create_sso_users(config: object, users: object, user_type: str) -> object:
 
     click.echo("Creating/Fetching IC users")
 
-    with click.progressbar(users.keys(), label="Getting group IDs") as user_emails:
+    with click.progressbar(users.keys(), label="Creating IC users") as user_emails:
         for user_email in user_emails:
             try:
                 response = identity_store_client.get_user_id(
